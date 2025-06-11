@@ -302,6 +302,9 @@ class Connector:
     def setWs(self, ws : EufySecurityWebSocket):
         self.ws = ws
 
+    def setSerialNo(self, serialno: str):
+        self.serialno = serialno
+
     async def on_open(self):
         print(f" on_open - executed")
 
@@ -328,7 +331,8 @@ class Connector:
                 message_result = payload[message_type]
                 states = message_result["state"]
                 for state in states["devices"]:
-                    self.serialno = state["serialNumber"]
+                    if not self.serialno:
+                        self.serialno = state["serialNumber"]
                 self.video_thread = ClientAcceptThread(video_sock, run_event, "Video", self.ws, self.serialno)
                 self.audio_thread = ClientAcceptThread(audio_sock, run_event, "Audio", self.ws, self.serialno)
                 self.backchannel_thread = ClientAcceptThread(backchannel_sock, run_event, "BackChannel", self.ws, self.serialno)
@@ -387,6 +391,7 @@ async def init_websocket():
         c.on_error,
     )
     c.setWs(ws)
+    c.setSerialNo(sys.argv[2])
     try:
         await ws.connect()
         await ws.send_message(json.dumps(START_LISTENING_MESSAGE))
